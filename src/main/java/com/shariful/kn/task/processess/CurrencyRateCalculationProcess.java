@@ -1,4 +1,4 @@
-package com.shariful.kn.task;
+package com.shariful.kn.task.processess;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,33 +21,29 @@ import java.util.Scanner;
 
 
 @RequiredArgsConstructor
-public class MainMethod {
+public class CurrencyRateCalculationProcess {
 
-    public static final Logger LOG = LoggerFactory.getLogger(MainMethod.class);
+    public static final Logger LOG = LoggerFactory.getLogger(CurrencyRateCalculationProcess.class);
 
-    public static void main(String[] args) throws JsonProcessingException {
+    public static void main(String[] args){
         try {
             Scanner input = new Scanner(System.in);
             String inputCurrency = input.next().toUpperCase();
-            boolean isValidCurrency = Currency.getAvailableCurrencies().stream()
-                    .anyMatch(currency -> currency.getCurrencyCode().equals(inputCurrency));
-            if (!isValidCurrency) {
-                throw new InvalidInputException("Illegal input , Currency is not available in currency list " +
-                        "or length not correct");
-            }
+            validate(inputCurrency);
             final WebClientService webClientService = new WebClientService();
             Optional<String> timeSeriesRates = webClientService.getTimeSeriesRates(inputCurrency);
             Optional<String> latestRates = webClientService.getLatestRates(inputCurrency);
             if (timeSeriesRates.isPresent() && latestRates.isPresent()) {
-                CurrencyRateTimeSeries currencyRateTimeSeries = new ObjectMapper().readValue(timeSeriesRates.get(),
+                final ObjectMapper objectMapper = new ObjectMapper();
+                CurrencyRateTimeSeries currencyRateTimeSeries = objectMapper.readValue(timeSeriesRates.get(),
                         CurrencyRateTimeSeries.class);
-                CurrencyRateLatest currencyRateLatest = new ObjectMapper().readValue(latestRates.get(),
+                CurrencyRateLatest currencyRateLatest = objectMapper.readValue(latestRates.get(),
                         CurrencyRateLatest.class);
 
                 RateResponse rateResponse = RateCalculator.getRateResponse(currencyRateTimeSeries, currencyRateLatest, inputCurrency);
                 LOG.info("Rate response is - {} ", rateResponse);
             } else {
-                throw new TechnicalException("Unknown exception occured while processing response");
+                throw new TechnicalException("Unknown exception occurred while processing response");
             }
 
 
@@ -64,5 +60,14 @@ public class MainMethod {
             LOG.warn("unknown exception occurred details - {}", exception.getMessage());
         }
 
+    }
+
+    private static void validate(String inputCurrency){
+        boolean isValidCurrency = Currency.getAvailableCurrencies().stream()
+                .anyMatch(currency -> currency.getCurrencyCode().equals(inputCurrency));
+        if (!isValidCurrency) {
+            throw new InvalidInputException("Illegal input , Currency is not available in currency list " +
+                    "or length not correct");
+        }
     }
 }
