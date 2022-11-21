@@ -1,0 +1,15 @@
+version: '3.5'
+
+services:
+  app:
+    image: 'sharifulbony/kn-task:latest'
+    build:
+      context: .
+    container_name: app
+    networks:
+      - webproxy
+
+networks:
+  webproxy:
+    driver: bridge
+
